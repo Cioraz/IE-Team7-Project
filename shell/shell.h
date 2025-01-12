@@ -4,7 +4,6 @@
 #include <string>
 #include <vector>
 #include <map>
-#include <functional>
 using namespace std;
 class Shell {
 public:
@@ -27,7 +26,6 @@ private:
     vector<string> parsedCommands;
     vector<string> arguments;
     vector<string> builtin_str = {"cd", "help", "exit", "pwd", "echo", "kills"};
-    vector<function<int(vector<string>&)>> builtin_func = {cd , help, exit, pwd, echo, kills};
     map<string, string> environmentVariables;
 };
 

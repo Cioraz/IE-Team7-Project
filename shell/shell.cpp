@@ -30,15 +30,30 @@ vector<string> Shell::parseLine(string &inputCommand) {
 
 }
 
+//code for the execute function is not optimised yet. The inbuilt function of kills is yet to be added in.
+
 int Shell::execute(vector<string>& args){
     if(args.empty() || args[0].empty()){
         return 1;
+    }                                           //args[0] corresponds to the command the user types in at the beginning
+    else if(args[0] == builtin_str[0]){              
+        return Shell.cd(args[1]);
     }
-    for(int i = 0;i < builtin_str.size(); ++i){
-        if(args[0] == builtin_str[i]){              //args[0] corresponds to the command the user types in at the beginning
-            return builtin_func[i](args);
-        }
+    else if(args[0] == builtin_str[1]){              
+        return Shell.help();
     }
+    else if(args[0] == builtin_str[2]){              
+        return Shell.exit();
+    }
+    else if(args[0] == builtin_str[3]){              
+        return Shell.pwd();
+    }
+    else if(args[0] == builtin_str[4]){              
+        return Shell.echo(args);                    //echo is still to be tested
+    }
+    //else if(args[0] == builtin_str[5]){              //kills fails to work due to it accepting parameters of type pid_t
+    //     return Shell.kills(args);
+    // }
     return launch(args);                //does launch(args) if the command entered is not found in the list of inbuilt functions
 }
 
