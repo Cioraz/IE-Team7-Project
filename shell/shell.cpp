@@ -37,23 +37,26 @@ int Shell::execute(vector<string>& args){
         return 1;
     }                                           //args[0] corresponds to the command the user types in at the beginning
     else if(args[0] == builtin_str[0]){              
-        return Shell.cd(args[1]);
+        return cd(args[1]);
     }
     else if(args[0] == builtin_str[1]){              
-        return Shell.help();
+        return help();
     }
     else if(args[0] == builtin_str[2]){              
-        return Shell.exit();
+        return exit();
     }
     else if(args[0] == builtin_str[3]){              
-        return Shell.pwd();
+        return pwd();
     }
-    else if(args[0] == builtin_str[4]){              
-        return Shell.echo(args);                    //echo is still to be tested
+    else if(args[0] == builtin_str[4]){ 
+        int n=args.size();
+        string s="";
+        for(int i=1;i<n;i++) s+=args[i];             
+        return echo(s);                   
     }
-    //else if(args[0] == builtin_str[5]){              //kills fails to work due to it accepting parameters of type pid_t
-    //     return Shell.kills(args);
-    // }
+    else if(args[0] == builtin_str[5]){              
+        return kills(stoi(args[1]));
+    }
     return launch(args);                //does launch(args) if the command entered is not found in the list of inbuilt functions
 }
 
@@ -118,7 +121,7 @@ int Shell::pwd(){
     }
 }
 
-void Shell::echo(string& message){
+int Shell::echo(string& message){
     istringstream input(message);
     string word;                    //basically dynamically takes in every individual string from the 
     bool isFirst = true;            //line of code the user writes
@@ -130,6 +133,7 @@ void Shell::echo(string& message){
         isFirst = false;
     }
     cout<<endl;
+    return 1;
 }
 
 
