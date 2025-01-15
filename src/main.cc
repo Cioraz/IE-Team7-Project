@@ -4,12 +4,6 @@ using namespace std;
 
 int main() {
     Shell shell;
-    while (true) {
-        cout << "> ";
-        string input = shell.readLine();
-        vector<string> args = shell.parseLine(input);
-        if (args.empty()) continue;
-        if (shell.execute(args) == 0) break; 
-    }
+    shell.shell_loop(); 
     return 0;
 }
