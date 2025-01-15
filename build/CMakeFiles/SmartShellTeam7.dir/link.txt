@@ -1,0 +1,1 @@
+/usr/bin/c++ -Wl,--dependency-file=CMakeFiles/SmartShellTeam7.dir/link.d CMakeFiles/SmartShellTeam7.dir/src/main.cc.o CMakeFiles/SmartShellTeam7.dir/src/shell.cc.o -o SmartShellTeam7

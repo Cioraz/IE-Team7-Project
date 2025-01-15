@@ -5,7 +5,7 @@ compile:
 	cd build && make && cd ..
 
 run:
-	cd build && ./main 
+	cd build && ./shell 
 
 clean:
 	rm -rf build

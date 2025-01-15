@@ -8,6 +8,7 @@ using namespace std;
 class Shell {
 public:
     Shell();
+    void shell_loop();
     string readLine();
     vector<string> parseLine(string& input);
     int execute(vector<string>& args);
@@ -16,7 +17,7 @@ public:
     int help();
     int exit();
     int pwd();
-    void echo(string& message);
+    int echo(string& message);
     int kills(pid_t processId);
     void Pipelines( vector<string>& command1 ,vector <string> &command2);
     string substituteVariable(const string& args);

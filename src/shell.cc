@@ -11,6 +11,22 @@
 #define LSH_TOKEN_DELIM " \t\r\n\a"
 using namespace std;
 
+Shell::Shell(){
+
+}
+
+void Shell::shell_loop(void){
+    string line;
+    vector<string> args;
+    int status;
+
+    do{
+        cout<<"> ";
+        line=Shell::readLine();
+        args=Shell::parseLine(line);
+        status=Shell::execute(args);
+    } while(status);
+}
 
 string Shell::readLine(){
     string line;
@@ -49,10 +65,12 @@ int Shell::execute(vector<string>& args){
         return pwd();
     }
     else if(args[0] == builtin_str[4]){ 
-        int n=args.size();
-        string s="";
-        for(int i=1;i<n;i++) s+=args[i];             
-        return echo(s);                   
+        string message;
+        for (size_t i = 1; i < args.size(); i++) {
+        message += args[i];
+        if (i < args.size() - 1) message += " ";  // Add space between words but not at end
+        }
+        return echo(message);         
     }
     else if(args[0] == builtin_str[5]){              
         return kills(stoi(args[1]));
@@ -96,6 +114,7 @@ int Shell::cd(string& path){
             perror("lsh");                 //const char* which is done by the c_str() function.
         }
     }
+    return 1;
 }
 
 int Shell::help(){
@@ -121,19 +140,9 @@ int Shell::pwd(){
     }
 }
 
-int Shell::echo(string& message){
-    istringstream input(message);
-    string word;                    //basically dynamically takes in every individual string from the 
-    bool isFirst = true;            //line of code the user writes
-    while(input >> word){
-        if(!isFirst){
-            cout<<" ";          //to print out a space between every element after the first one
-        }
-        cout<<word;
-        isFirst = false;
-    }
-    cout<<endl;
-    return 1;
+int Shell::echo(string& message) {
+    cout << message << endl;
+    return 1;  // Return 0 for success, following Unix convention
 }
 
 
@@ -172,13 +181,13 @@ string Shell::substituteVariable(const string& args){
     string result = args;
     regex var_regex(R"(\$\{?([A-Za-z_][A-Za-z0-9_]*)\}?)");                          //Regular exp to find either $VARIABLE or ${VARIABLE}. regex corresponds to regular expression.
 
-    result = regex_replace(result, var_regex, [](const smatch& match) -> string {        //function to replace each match with envitonment variables value
-        const string var_name = match[1].str();                                         //extracts variable name
-        const char* value = getenv(var_name.c_str());                               //getenv gets the environment variables value
+    // result = regex_replace(result, var_regex, [](const smatch& match) -> string {        //function to replace each match with envitonment variables value
+    //     const string var_name = match[1].str();                                         //extracts variable name
+    //     const char* value = getenv(var_name.c_str());                               //getenv gets the environment variables value
 
-        return value ? string(value) : match[0].str();
-    });
+    //     return value ? string(value) : match[0].str();
+    // });
 
-    return result;
+    return 0;
 }
 
