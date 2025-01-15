@@ -12,4 +12,4 @@ set (
     src/shell.h
 )
 
-add_executable(myShell ${SOURCES})
+add_executable(SmartShellTeam7 ${SOURCES})
