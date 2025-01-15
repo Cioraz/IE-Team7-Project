@@ -16,7 +16,7 @@
 - In the same cloned folder run `make run` to ONLY RUN the application and check for logical errors.
 
 ### Commiting
-- Before COMMITING RUN `make clean` in the `Shell_impl` folder ensuring no temporary files are commited to github.
+- Before COMMITING RUN `make clean` in the cloned folder ensuring no temporary files are commited to github.
 
 ## Pushing to Github
 ## Branching
