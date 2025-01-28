@@ -133,7 +133,7 @@ int Shell::pwd(){
     char *cwd = getcwd(NULL, 0);  
     if (cwd) {
         printf("%s\n", cwd);  
-        return 0;
+        return 1;
     } else {
         perror("pwd");  
         return -1;
