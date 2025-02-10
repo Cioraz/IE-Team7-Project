@@ -1,0 +1,108 @@
+#include "mainwindow.h"
+#include "ui_mainwindow.h"
+#include "shell.h"
+#include <unistd.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <vector>
+#include <string>
+#include <iostream>
+
+using namespace std;
+
+MainWindow::MainWindow(QWidget *parent)
+    : QMainWindow(parent)
+    , ui(new Ui::MainWindow)
+{
+    ui->setupUi(this);
+
+    // ✅ Set initial prompt
+    ui->lineEdit->setText("> ");
+    ui->lineEdit->setCursorPosition(2);
+
+    // ✅ Prevent cursor from moving before "> "
+    connect(ui->lineEdit, &QLineEdit::cursorPositionChanged, this, [this](int, int newPos) {
+        if (newPos < 2) ui->lineEdit->setCursorPosition(2);
+    });
+}
+
+MainWindow::~MainWindow()
+{
+    delete ui;
+}
+
+void MainWindow::on_lineEdit_returnPressed()
+{
+    Shell shell;
+
+    // ✅ Get user input after "> "
+    QString userInput = ui->lineEdit->text().trimmed();
+
+    // ✅ Ensure input starts with "> " (prevents manual deletion)
+    if (!userInput.startsWith("> ")) {
+        ui->lineEdit->setText("> ");
+        ui->lineEdit->setCursorPosition(2);
+        return;
+    }
+
+    std::string line = userInput.mid(2).toStdString(); // Remove "> "
+
+    if (line.empty()) return; // Ignore empty input
+
+    // ✅ Capture command output using a pipe
+    int pipefd[2];
+    if (pipe(pipefd) == -1) {
+        perror("pipe");
+        return;
+    }
+
+    fflush(stdout);
+    fflush(stderr);
+
+    int savedStdout = dup(STDOUT_FILENO);
+    int savedStderr = dup(STDERR_FILENO);
+    if (savedStdout == -1 || savedStderr == -1) {
+        perror("dup");
+        return;
+    }
+
+    if (dup2(pipefd[1], STDOUT_FILENO) == -1 || dup2(pipefd[1], STDERR_FILENO) == -1) {
+        perror("dup2");
+        return;
+    }
+
+    ::close(pipefd[1]);  // Close unused write end
+
+    // ✅ Execute shell command
+    vector<string> args = shell.parseLine(line);
+    int status = shell.execute(args);
+    (void)status; // Ignore status for now
+
+    fflush(stdout);
+    fflush(stderr);
+
+    // ✅ Restore original stdout/stderr
+    dup2(savedStdout, STDOUT_FILENO);
+    dup2(savedStderr, STDERR_FILENO);
+    ::close(savedStdout);
+    ::close(savedStderr);
+
+    // ✅ Read command output from pipe
+    string capturedOutput;
+    char buffer[1024];
+    ssize_t bytesRead;
+    while ((bytesRead = read(pipefd[0], buffer, sizeof(buffer) - 1)) > 0) {
+        buffer[bytesRead] = '\0';
+        capturedOutput.append(buffer);
+    }
+    ::close(pipefd[0]);
+
+    // ✅ Display output in QTextEdit
+    ui->output->append(QString::fromStdString(capturedOutput));
+
+    // ✅ Reset input for next command
+    ui->lineEdit->clear();
+    ui->lineEdit->setText("> ");
+    ui->lineEdit->setCursorPosition(2);
+}
