@@ -17,11 +17,9 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
-    // ✅ Set initial prompt
     ui->lineEdit->setText("> ");
     ui->lineEdit->setCursorPosition(2);
 
-    // ✅ Prevent cursor from moving before "> "
     connect(ui->lineEdit, &QLineEdit::cursorPositionChanged, this, [this](int, int newPos) {
         if (newPos < 2) ui->lineEdit->setCursorPosition(2);
     });
@@ -36,10 +34,10 @@ void MainWindow::on_lineEdit_returnPressed()
 {
     Shell shell;
 
-    // ✅ Get user input after "> "
+   
     QString userInput = ui->lineEdit->text().trimmed();
 
-    // ✅ Ensure input starts with "> " (prevents manual deletion)
+  
     if (!userInput.startsWith("> ")) {
         ui->lineEdit->setText("> ");
         ui->lineEdit->setCursorPosition(2);
@@ -50,7 +48,7 @@ void MainWindow::on_lineEdit_returnPressed()
 
     if (line.empty()) return; // Ignore empty input
 
-    // ✅ Capture command output using a pipe
+    
     int pipefd[2];
     if (pipe(pipefd) == -1) {
         perror("pipe");
@@ -74,7 +72,7 @@ void MainWindow::on_lineEdit_returnPressed()
 
     ::close(pipefd[1]);  // Close unused write end
 
-    // ✅ Execute shell command
+  
     vector<string> args = shell.parseLine(line);
     int status = shell.execute(args);
     (void)status; // Ignore status for now
@@ -82,13 +80,13 @@ void MainWindow::on_lineEdit_returnPressed()
     fflush(stdout);
     fflush(stderr);
 
-    // ✅ Restore original stdout/stderr
+   
     dup2(savedStdout, STDOUT_FILENO);
     dup2(savedStderr, STDERR_FILENO);
     ::close(savedStdout);
     ::close(savedStderr);
 
-    // ✅ Read command output from pipe
+   
     string capturedOutput;
     char buffer[1024];
     ssize_t bytesRead;
@@ -98,10 +96,10 @@ void MainWindow::on_lineEdit_returnPressed()
     }
     ::close(pipefd[0]);
 
-    // ✅ Display output in QTextEdit
+   
     ui->output->append(QString::fromStdString(capturedOutput));
 
-    // ✅ Reset input for next command
+    
     ui->lineEdit->clear();
     ui->lineEdit->setText("> ");
     ui->lineEdit->setCursorPosition(2);
