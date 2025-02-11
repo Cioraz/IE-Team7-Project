@@ -11,27 +11,26 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>Shell</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <widget class="QLineEdit" name="lineEdit">
+   <widget class="QTextEdit" name="terminal">
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>30</y>
-      <width>771</width>
-      <height>30</height>
+      <y>10</y>
+      <width>780</width>
+      <height>580</height>
      </rect>
     </property>
-   </widget>
-   <widget class="QTextEdit" name="output">
-    <property name="geometry">
-     <rect>
-      <x>10</x>
-      <y>80</y>
-      <width>771</width>
-      <height>391</height>
-     </rect>
+    <property name="readOnly">
+     <bool>false</bool>
+    </property>
+    <property name="font">
+     <font>
+      <family>Monospace</family>
+      <pointsize>10</pointsize>
+     </font>
     </property>
    </widget>
   </widget>

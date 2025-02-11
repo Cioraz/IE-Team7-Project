@@ -2,6 +2,8 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QTextEdit>
+#include "shell.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -17,10 +19,17 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
+protected:
+    // Declare eventFilter here
+    bool eventFilter(QObject *obj, QEvent *event) override;
+
 private slots:
-    void on_lineEdit_returnPressed();
+    void handleInput();
 
 private:
     Ui::MainWindow *ui;
+    Shell shell;
+    QString currentInput;
+    void appendOutput(const QString &text);
 };
 #endif // MAINWINDOW_H

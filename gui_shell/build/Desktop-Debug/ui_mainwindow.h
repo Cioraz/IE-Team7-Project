@@ -11,7 +11,6 @@
 
 #include <QtCore/QVariant>
 #include <QtWidgets/QApplication>
-#include <QtWidgets/QLineEdit>
 #include <QtWidgets/QMainWindow>
 #include <QtWidgets/QTextEdit>
 #include <QtWidgets/QWidget>
@@ -22,8 +21,7 @@ class Ui_MainWindow
 {
 public:
     QWidget *centralwidget;
-    QLineEdit *lineEdit;
-    QTextEdit *output;
+    QTextEdit *terminal;
 
     void setupUi(QMainWindow *MainWindow)
     {
@@ -32,12 +30,14 @@ public:
         MainWindow->resize(800, 600);
         centralwidget = new QWidget(MainWindow);
         centralwidget->setObjectName("centralwidget");
-        lineEdit = new QLineEdit(centralwidget);
-        lineEdit->setObjectName("lineEdit");
-        lineEdit->setGeometry(QRect(10, 30, 771, 30));
-        output = new QTextEdit(centralwidget);
-        output->setObjectName("output");
-        output->setGeometry(QRect(10, 80, 771, 391));
+        terminal = new QTextEdit(centralwidget);
+        terminal->setObjectName("terminal");
+        terminal->setGeometry(QRect(10, 10, 780, 580));
+        terminal->setReadOnly(false);
+        QFont font;
+        font.setFamilies({QString::fromUtf8("Monospace")});
+        font.setPointSize(10);
+        terminal->setFont(font);
         MainWindow->setCentralWidget(centralwidget);
 
         retranslateUi(MainWindow);
@@ -47,7 +47,7 @@ public:
 
     void retranslateUi(QMainWindow *MainWindow)
     {
-        MainWindow->setWindowTitle(QCoreApplication::translate("MainWindow", "MainWindow", nullptr));
+        MainWindow->setWindowTitle(QCoreApplication::translate("MainWindow", "Shell", nullptr));
     } // retranslateUi
 
 };
