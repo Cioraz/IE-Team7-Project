@@ -3,20 +3,13 @@
 ## Writing Code
 ### Cloning and setup
 - First clone the repo with `git clone`
-- For ssh its `git clone git@github.com:Cioraz/IE-Team7-Project.git` (Use this preferbly, but for this have ssh key setup check it out on Youtube)
-- For https its `git clone https://github.com/Cioraz/IE-Team7-Project.git`
+- For ssh its `git clone -b GUI_testing git@github.com:Cioraz/IE-Team7-Project.git` (Use this preferbly, but for this have ssh key setup check it out on Youtube)
 
-### Building
-- Build the CmakeLists once using `make build` inside the cloned folder. (Do this only once as this generates all the CMake dependencies). Throughout the project mostly we will do this once each time we clone the project
-
-### Compiling
-- In the same cloned folder run `make compile` to ONLY compile the application and check if there are no compile errors.
-
-### Running
-- In the same cloned folder run `make run` to ONLY RUN the application and check for logical errors.
-
-### Commiting
-- Before COMMITING RUN `make clean` in the cloned folder ensuring no temporary files are commited to github.
+### Execution
+ cd IE-Team7-Project/gui_shell/build
+ cmake .. -DCMAKE_PREFIX_PATH=/usr/lib/qt6
+ make -j$(nproc)
+ ./shell_ulti
 
 ## Pushing to Github
 ## Branching
