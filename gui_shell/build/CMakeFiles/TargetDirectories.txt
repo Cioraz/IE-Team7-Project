@@ -1,0 +1,5 @@
+/home/jovita/github/IE-Team7-Project/gui_shell/build/CMakeFiles/shell_ulti.dir
+/home/jovita/github/IE-Team7-Project/gui_shell/build/CMakeFiles/edit_cache.dir
+/home/jovita/github/IE-Team7-Project/gui_shell/build/CMakeFiles/rebuild_cache.dir
+/home/jovita/github/IE-Team7-Project/gui_shell/build/CMakeFiles/shell_ulti_autogen_timestamp_deps.dir
+/home/jovita/github/IE-Team7-Project/gui_shell/build/CMakeFiles/shell_ulti_autogen.dir
