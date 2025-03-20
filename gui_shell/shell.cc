@@ -1,94 +1,122 @@
 #include "shell.h"
-#include <iostream>
-#include <sstream>
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <cstdlib>
-#include <fcntl.h>
-#include <signal.h>
-#include <regex>
 #include <QApplication>
 #include <QMetaObject>
 #include <QCoreApplication>
-#define LSH_TOKEN_DELIM " \t\r\n\a"
-using namespace std;
 
-Shell::Shell(){
-
+std::string join(const std::vector<std::string>& tokens, char delim) {
+    std::string result;
+    for (const auto& token : tokens) {
+        if (!result.empty()) result += delim;
+        result += token;
+    }
+    return result;
 }
 
+Shell::Shell() {}
 
-string Shell::readLine(){
-    string line;
-    getline(cin,line);
+std::string Shell::processNLPCommand(const std::string& nlInput) {
+    std::string python_cmd = "python3 app.py \"" + nlInput + "\"";
+    
+    FILE* pipe = popen(python_cmd.c_str(), "r");
+    if (!pipe) return "echo 'NLP processing failed'";
+    
+    char buffer[128];
+    std::string result = "";
+    while (fgets(buffer, sizeof(buffer), pipe) != NULL) {
+        result += buffer;
+    }
+    pclose(pipe);
+    
+    // Remove trailing newline if present
+    if (!result.empty() && result[result.length()-1] == '\n') {
+        result.erase(result.length()-1);
+    }
+    return result;
+}
+
+std::string Shell::getGeminiFallback(const std::string& query) {
+    std::string python_cmd = "python3 app.py \"" + query + "\"";
+    
+    FILE* pipe = popen(python_cmd.c_str(), "r");
+    if (!pipe) return "echo 'Gemini fallback failed'";
+    
+    char buffer[128];
+    std::string result = "";
+    while (fgets(buffer, sizeof(buffer), pipe) != NULL) {
+        result += buffer;
+    }
+    pclose(pipe);
+    
+    // Remove trailing newline if present
+    if (!result.empty() && result[result.length()-1] == '\n') {
+        result.erase(result.length()-1);
+    }
+    return result;
+}
+
+std::string Shell::readLine() {
+    std::string line;
+    std::getline(std::cin, line);
+    
+    if (line.rfind("nl:", 0) == 0) {  // If input starts with "nl:"
+        std::string original_query = line.substr(3); // Remove "nl:" prefix
+        std::string primary_output = processNLPCommand(original_query);
+        
+        // Simple confidence check (replace with actual logic)
+        if (primary_output.find("UNKNOWN") != std::string::npos) {
+            return getGeminiFallback(original_query);
+        }
+        return primary_output;
+    }
+    
     return line;
 }
 
-vector<string> Shell::parseLine(string &inputCommand) {
-    vector<string> tokens;
-    string token;
-    istringstream buffer(inputCommand);
+std::vector<std::string> Shell::parseLine(std::string& inputCommand) {
+    std::vector<std::string> tokens;
+    std::string token;
+    std::istringstream buffer(inputCommand);
     
-    while (getline(buffer,token,*LSH_TOKEN_DELIM)) { //tokenisation of command
+    while (std::getline(buffer, token, *LSH_TOKEN_DELIM)) { //tokenisation of command
         tokens.push_back(token);
     }
     return tokens;
-
 }
 
-//code for the execute function is not optimised yet. The inbuilt function of kills is yet to be added in.
-
-int Shell::execute(vector<string>& args){
-    if(args.empty() || args[0].empty()){
-        return 1;
-    }                                           //args[0] corresponds to the command the user types in at the beginning
-    else if(args[0] == builtin_str[0]){              
-        return cd(args[1]);
+int Shell::execute(std::vector<std::string>& args) {
+    if (args[0] == "nl:auto") {  // Bypass confirmation
+        args.erase(args.begin());
+        return launch(args);
     }
-    else if(args[0] == builtin_str[1]){              
-        return help();
+    
+    std::cout << "Generated command: " << join(args, ' ') << std::endl;
+    std::cout << "Execute? [Y/n]: ";
+    std::string confirm;
+    std::getline(std::cin, confirm);
+    
+    if (confirm.empty() || std::tolower(confirm[0]) == 'y') {
+        return launch(args);
     }
-    else if(args[0] == builtin_str[2]){              
-        return exit();
-    }
-    else if(args[0] == builtin_str[3]){              
-        return pwd();
-    }
-    else if(args[0] == builtin_str[4]){ 
-        string message;
-        for (size_t i = 1; i < args.size(); i++) {
-        message += args[i];
-        if (i < args.size() - 1) message += " ";  // Add space between words but not at end
-        }
-        return echo(message);         
-    }
-    else if(args[0] == builtin_str[5]){              
-        return kills(stoi(args[1]));
-    }
-    return launch(args);                //does launch(args) if the command entered is not found in the list of inbuilt functions
+    return 1;
 }
 
-int Shell::launch(vector<string> &arguments) {
+int Shell::launch(std::vector<std::string>& arguments) {
     pid_t pid, wpid;
     int status;
     pid = fork();
     if (pid == 0) {
-        vector<char*> c_args;
-        for (auto &arg : arguments) {
-            //converting to appropriate argument type for execvp
+        std::vector<char*> c_args;
+        for (auto& arg : arguments) {
             c_args.push_back(const_cast<char*>(arg.c_str()));
         }
         c_args.push_back(nullptr);
         if (execvp(c_args[0], c_args.data()) == -1) {
-            perror("lsh");
+            std::perror("lsh");
         }
-        exit();
+        std::exit(0);
     } else if (pid < 0) {
-        //forking didnt work
-        perror("lsh");
+        std::perror("lsh");
     } else {
-        //parent process maintaining tabs on child processes
         do {
             wpid = waitpid(pid, &status, WUNTRACED);
         } while (!WIFEXITED(status) && !WIFSIGNALED(status));
@@ -96,60 +124,58 @@ int Shell::launch(vector<string> &arguments) {
     return 1;  
 }
 
-int Shell::cd(string& path){
-    if(path.empty()){
-        cerr<<"lsh: expected argument to \"cd\""<<endl;
-    }
-    else{
-        if(chdir(path.c_str()) != 0){      //chdir changes the current working directory by taking in a value of type
-            perror("lsh");                 //const char* which is done by the c_str() function.
+int Shell::cd(std::string& path) {
+    if (path.empty()) {
+        std::cerr << "lsh: expected argument to \"cd\"\n";
+    } else {
+        if (chdir(path.c_str()) != 0) {
+            std::perror("lsh");
         }
     }
     return 1;
 }
 
-int Shell::help(){
-    cout<<"Built_in functions present in this shell:"<<endl;
+int Shell::help() {
+    std::cout << "Built-in functions present in this shell:\n";
     for (int i = 0; i < builtin_str.size(); i++) {
-        cout << "  " << builtin_str[i] << endl;
+        std::cout << "  " << builtin_str[i] << std::endl;
     }
     return 1;
 }
 
-int Shell::exit(){
-    std::cerr << "Exit command received. Closing application..." << std::endl;
+int Shell::exit() {
+    std::cerr << "Exit command received. Closing application...\n";
     QCoreApplication::exit(0);
     return 0;
 }
 
-int Shell::pwd(){
-    char *cwd = getcwd(NULL, 0);  
+int Shell::pwd() {
+    char* cwd = getcwd(NULL, 0);  
     if (cwd) {
-        cout<<cwd;
+        std::cout << cwd;
         return 1;
     } else {
-        perror("pwd");  
+        std::perror("pwd");  
         return -1;
     }
 }
 
-int Shell::echo(string& message) {
-    cout << message << endl;
-    return 1;  // Return 0 for success, following Unix convention
+int Shell::echo(std::string& message) {
+    std::cout << message << std::endl;
+    return 1;  
 }
-
 
 int Shell::kills(pid_t pid) {
     int sig = SIGTERM;  
     if (kill(pid, sig) == 0) {     
         return 0;  
     } else {
-        perror("Error sending signal");
+        std::perror("Error sending signal");
         return -1; 
     }
 }
 
-void Shell::Pipelines(vector <string> &command1, vector <string> &command2) {
+void Shell::Pipelines(std::vector<std::string>& command1, std::vector<std::string>& command2) {
     int fd[2];
     pipe(fd);
 
@@ -157,30 +183,35 @@ void Shell::Pipelines(vector <string> &command1, vector <string> &command2) {
         close(fd[0]);     // Close the read end of the pipe      
         dup2(fd[1], STDOUT_FILENO); // Redirect standard output to the write end of the pipe
         close(fd[1]); // Close the write end of the pipe
-       if(!execute(command1))
-       cerr << "Error"<<endl;
+        if (!execute(command1))
+            std::cerr << "Error\n";
     } else {
         close(fd[1]); // Close the write end of the pipe
         dup2(fd[0], STDIN_FILENO); // Redirect standard input to the read end of the pipe
         close(fd[0]); // Close the read end of the pipe
 
-      if(!execute(command2))
-       cerr << "Error"<<endl;
+        if (!execute(command2))
+            std::cerr << "Error\n";
     }
 }
 
-
-string Shell::substituteVariable(const string& args){
-    string result = args;
-    regex var_regex(R"(\$\{?([A-Za-z_][A-Za-z0-9_]*)\}?)");                          //Regular exp to find either $VARIABLE or ${VARIABLE}. regex corresponds to regular expression.
-
-    // result = regex_replace(result, var_regex, [](const smatch& match) -> string {        //function to replace each match with envitonment variables value
-    //     const string var_name = match[1].str();                                         //extracts variable name
-    //     const char* value = getenv(var_name.c_str());                               //getenv gets the environment variables value
-
-    //     return value ? string(value) : match[0].str();
-    // });
-
-    return 0;
+std::string Shell::substituteVariable(const std::string& args) {
+    std::string result = args;
+    std::regex var_regex(R"(\$\{?([A-Za-z_][A-Za-z0-9_]*)\}?)");
+    
+    // Implement variable substitution logic here
+    return result;
 }
 
+void Shell::shell_loop() {
+    std::string line;
+    std::vector<std::string> args;
+    int status;
+
+    do {
+        std::cout << "> ";
+        line = readLine();
+        args = parseLine(line);
+        status = execute(args);
+    } while (status);
+}
