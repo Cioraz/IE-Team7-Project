@@ -8,10 +8,12 @@
 #include <vector>
 #include <string>
 #include <iostream>
+#include <QProcess>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
+    , promptPos(0)
 {
     ui->setupUi(this);
 
@@ -20,11 +22,14 @@ MainWindow::MainWindow(QWidget *parent)
     ui->terminal->setFontFamily("Monospace");
     ui->terminal->setFontPointSize(10);
 
-    // Display initial prompt
+    // Display initial prompt and record its position.
     ui->terminal->append("> ");
+    promptPos = ui->terminal->document()->toPlainText().length();
 
     // Install event filter for handling key presses
     ui->terminal->installEventFilter(this);
+
+    pendingCommand = "";
 }
 
 MainWindow::~MainWindow()
@@ -37,13 +42,24 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event)
 {
     if (obj == ui->terminal && event->type() == QEvent::KeyPress) {
         QKeyEvent *keyEvent = static_cast<QKeyEvent *>(event);
+
+        // Prevent deletion of the prompt area.
+        if (keyEvent->key() == Qt::Key_Backspace || keyEvent->key() == Qt::Key_Delete) {
+            QTextCursor cursor = ui->terminal->textCursor();
+            if (cursor.position() <= promptPos) {
+                return true; // Consume event to prevent deletion.
+            }
+        }
+
+        // Process Enter/Return keys as before.
         if (keyEvent->key() == Qt::Key_Return || keyEvent->key() == Qt::Key_Enter) {
             handleInput();
-            return true; // Consume the event
+            return true; // Consume the event.
         }
     }
-    return QMainWindow::eventFilter(obj, event); // Pass unhandled events to base class
+    return QMainWindow::eventFilter(obj, event);
 }
+
 
 void MainWindow::handleInput()
 {
@@ -52,41 +68,91 @@ void MainWindow::handleInput()
     cursor.movePosition(QTextCursor::StartOfLine, QTextCursor::KeepAnchor);
     QString line = cursor.selectedText().mid(2); // Remove "> "
 
-    if (line.isEmpty()) {
-        ui->terminal->append("> ");
-        return;
+    // Local variable for command to execute.
+    std::string execCommand;
+
+    // Check if a pending command exists from a previous natural language generation.
+    if (!pendingCommand.isEmpty()) {
+        // If the user simply presses Enter (no new text), execute the pending command.
+        if (line.trimmed().isEmpty()) {
+            execCommand = pendingCommand.toStdString();
+            pendingCommand.clear();
+            // Fall through to execute execCommand.
+        } else {
+            // User typed something new; discard the pending command.
+            pendingCommand.clear();
+        }
     }
 
-    // Process the command
-    std::string command = line.toStdString();
-    std::vector<std::string> args = shell.parseLine(command);
+    // If no execCommand has been set from pendingCommand, then process the current line.
+    if (execCommand.empty()) {
+        if (line.isEmpty()) {
+            ui->terminal->append("> ");
+            promptPos = ui->terminal->document()->toPlainText().length();
+            return;
+        }
 
+        // Check if the line is a natural language command.
+        if (line.startsWith("nl:")) {
+            std::string nlQuery = line.toStdString().substr(3); // Remove "nl:" prefix
+
+            // Show waiting message and force UI update.
+            ui->terminal->append("<span style='color: yellow;'>Generating command, please wait...</span>");
+            QCoreApplication::processEvents();
+
+            // Call the Python script (converter.py) to generate the bash command.
+            QProcess process;
+            process.start("python3", QStringList() << "converter.py" << QString::fromStdString(nlQuery));
+            if (!process.waitForFinished()) {
+                ui->terminal->append("Error: Python process did not finish.");
+                ui->terminal->append("> ");
+                promptPos = ui->terminal->document()->toPlainText().length();
+                return;
+            }
+            QByteArray pyOutput = process.readAllStandardOutput();
+            std::string convertedCommand = pyOutput.toStdString();
+
+            // Display the generated command.
+            ui->terminal->append("<span style='color: green;'>Generated command:</span> " + QString::fromStdString(convertedCommand));
+            ui->terminal->append("Press Enter to execute this command, or type a new command.");
+
+            // Store the generated command for later execution.
+            pendingCommand = QString::fromStdString(convertedCommand);
+            ui->terminal->append("> ");
+            promptPos = ui->terminal->document()->toPlainText().length();
+            return;
+        } else {
+            // Otherwise, treat the input as a normal command.
+            execCommand = line.toStdString();
+        }
+    }
+
+    // At this point, execCommand contains the command to be executed.
+    std::vector<std::string> args = shell.parseLine(execCommand);
+
+    // Redirect stdout and stderr to capture command output.
     int pipefd[2];
     if (pipe(pipefd) == -1) {
         perror("pipe");
         return;
     }
-
     int savedStdout = dup(STDOUT_FILENO);
     int savedStderr = dup(STDERR_FILENO);
-
     if (dup2(pipefd[1], STDOUT_FILENO) == -1 || dup2(pipefd[1], STDERR_FILENO) == -1) {
         perror("dup2");
         return;
     }
-
-    ::close(pipefd[1]); // Explicitly use POSIX close()
+    ::close(pipefd[1]);
 
     int status = shell.execute(args);
-    (void)status; // Ignore status for now
+    (void)status; // Status handling can be improved as needed
 
     fflush(stdout);
     fflush(stderr);
-
     dup2(savedStdout, STDOUT_FILENO);
     dup2(savedStderr, STDERR_FILENO);
-    ::close(savedStdout); // Explicitly use POSIX close()
-    ::close(savedStderr); // Explicitly use POSIX close()
+    ::close(savedStdout);
+    ::close(savedStderr);
 
     char buffer[1024];
     QString output;
@@ -95,20 +161,19 @@ void MainWindow::handleInput()
         buffer[bytesRead] = '\0';
         output += QString::fromUtf8(buffer);
     }
-    ::close(pipefd[0]); // Explicitly use POSIX close()
+    ::close(pipefd[0]);
 
-    // Append the output to the terminal
     if (!output.isEmpty()) {
         ui->terminal->append(output);
     }
-
-    // Add new prompt
     ui->terminal->append("> ");
+    promptPos = ui->terminal->document()->toPlainText().length();
 
-    // Move cursor to the end
     cursor.movePosition(QTextCursor::End);
     ui->terminal->setTextCursor(cursor);
 }
+
+
 
 void MainWindow::appendOutput(const QString &text)
 {

@@ -20,7 +20,6 @@ public:
     ~MainWindow();
 
 protected:
-    // Declare eventFilter here
     bool eventFilter(QObject *obj, QEvent *event) override;
 
 private slots:
@@ -30,6 +29,10 @@ private:
     Ui::MainWindow *ui;
     Shell shell;
     QString currentInput;
-    void appendOutput(const QString &text);
+    QString pendingCommand;
+    int promptPos;   // Tracks the position of the prompt
+
+    void appendOutput(const QString &text); // <-- Only declare once
 };
+
 #endif // MAINWINDOW_H
