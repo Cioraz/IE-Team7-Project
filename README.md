@@ -7,6 +7,8 @@
 
 ### Execution
 - cd IE-Team7-Project/gui_shell/build
+- clear contents of build folder except checkpoint-1040 and converter.py
+- run cmake ..
 - python3 -m venv venv
 - source venv/bin/activate
 - pip install transformers torch
