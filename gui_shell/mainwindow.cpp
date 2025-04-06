@@ -60,7 +60,6 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event)
     return QMainWindow::eventFilter(obj, event);
 }
 
-
 void MainWindow::handleInput()
 {
     QTextCursor cursor = ui->terminal->textCursor();
@@ -101,26 +100,46 @@ void MainWindow::handleInput()
             QCoreApplication::processEvents();
 
             // Call the Python script (converter.py) to generate the bash command.
-            QProcess process;
-            process.start("python3", QStringList() << "converter.py" << QString::fromStdString(nlQuery));
-            if (!process.waitForFinished()) {
-                ui->terminal->append("Error: Python process did not finish.");
-                ui->terminal->append("> ");
-                promptPos = ui->terminal->document()->toPlainText().length();
-                return;
-            }
-            QByteArray pyOutput = process.readAllStandardOutput();
-            std::string convertedCommand = pyOutput.toStdString();
+            QProcess* pythonProcess = new QProcess(this);
+            pythonProcess->setProcessChannelMode(QProcess::MergedChannels);
 
-            // Display the generated command.
-            ui->terminal->append("<span style='color: green;'>Generated command:</span> " + QString::fromStdString(convertedCommand));
-            ui->terminal->append("Press Enter to execute this command, or type a new command.");
+            // Connect signal to handle when process finishes
+            connect(pythonProcess, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+                [this, pythonProcess](int exitCode, QProcess::ExitStatus exitStatus) {
+                    QByteArray pyOutput = pythonProcess->readAllStandardOutput();
+                    QString convertedCommandStr = QString::fromUtf8(pyOutput).trimmed();
+                    
+                    // Display the generated command
+                    ui->terminal->append("<span style='color: green;'>Generated command:</span> " + convertedCommandStr);
+                    ui->terminal->append("Press Enter to execute this command, or type a new command.");
+                    
+                    // Store the generated command for later execution
+                    pendingCommand = convertedCommandStr;
+                    ui->terminal->append("> ");
+                    promptPos = ui->terminal->document()->toPlainText().length();
+                    
+                    // Clean up the process
+                    pythonProcess->deleteLater();
+                }
+            );
 
-            // Store the generated command for later execution.
-            pendingCommand = QString::fromStdString(convertedCommand);
-            ui->terminal->append("> ");
-            promptPos = ui->terminal->document()->toPlainText().length();
-            return;
+            // Connect error signal
+            connect(pythonProcess, &QProcess::errorOccurred, 
+                [this, pythonProcess](QProcess::ProcessError error) {
+                    ui->terminal->append("Error: Python process failed with error code: " + QString::number(error));
+                    ui->terminal->append("> ");
+                    promptPos = ui->terminal->document()->toPlainText().length();
+                    
+                    // Clean up the process
+                    pythonProcess->deleteLater();
+                }
+            );
+
+            // Start the process
+            pythonProcess->start("python3", QStringList() << "converter.py" << QString::fromStdString(nlQuery));
+            
+            // Don't wait here - continue and let the callback handle the response
+            return;  // Return immediately after starting the process
         } else {
             // Otherwise, treat the input as a normal command.
             execCommand = line.toStdString();
@@ -172,6 +191,12 @@ void MainWindow::handleInput()
     cursor.movePosition(QTextCursor::End);
     ui->terminal->setTextCursor(cursor);
 }
+
+
+
+         
+
+ 
 
 
 

@@ -25,13 +25,13 @@ def main():
         if not base_model_name or base_model_name == "":
             base_model_name = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
             
-        print(f"Using base model: {base_model_name}")
+        #print(f"Using base model: {base_model_name}")
         
         # Load tokenizer
         tokenizer = AutoTokenizer.from_pretrained(base_model_name)
         
         # Load base model with specific device configuration
-        print("Loading base model...")
+        #print("Loading base model...")
         # Use CPU if CUDA is not available to avoid disk offloading issues
         device_map = "cpu" if not torch.cuda.is_available() else "auto"
         
@@ -44,7 +44,7 @@ def main():
         )
         
         # Load adapter
-        print("Loading adapter...")
+        #print("Loading adapter...")
         model = PeftModel.from_pretrained(
             base_model, 
             "./checkpoint-1040",
@@ -52,7 +52,7 @@ def main():
         )
         model.eval()
         
-        print("Model loaded successfully")
+        #print("Model loaded successfully")
     except Exception as e:
         print(f"Error loading model: {e}")
         import traceback
