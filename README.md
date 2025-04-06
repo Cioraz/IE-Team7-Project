@@ -3,10 +3,15 @@
 ## Writing Code
 ### Cloning and setup
 - First clone the repo with `git clone`
-- For ssh its `git clone -b GUI_testing git@github.com:Cioraz/IE-Team7-Project.git` (Use this preferbly, but for this have ssh key setup check it out on Youtube)
+- For ssh its `git clone -b model_testing git@github.com:Cioraz/IE-Team7-Project.git` (Use this preferbly, but for this have ssh key setup check it out on Youtube)
 
 ### Execution
 - cd IE-Team7-Project/gui_shell/build
+- python3 -m venv venv
+- source venv/bin/activate
+- pip install transformers torch
+- pip install peft
+- python3 converter.py "some text"
 - cmake .. -DCMAKE_PREFIX_PATH=/usr/lib/qt6
 - make -j$(nproc)
 - ./shell_ulti
