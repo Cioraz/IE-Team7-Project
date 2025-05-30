@@ -1,0 +1,14 @@
+[
+{
+  "directory": "/home/sunil/IE-Team7-Project/build",
+  "command": "/usr/bin/clang++ -g -std=gnu++17 -o CMakeFiles/shell.dir/src/main.cc.o -c /home/sunil/IE-Team7-Project/src/main.cc",
+  "file": "/home/sunil/IE-Team7-Project/src/main.cc",
+  "output": "CMakeFiles/shell.dir/src/main.cc.o"
+},
+{
+  "directory": "/home/sunil/IE-Team7-Project/build",
+  "command": "/usr/bin/clang++ -g -std=gnu++17 -o CMakeFiles/shell.dir/src/shell.cc.o -c /home/sunil/IE-Team7-Project/src/shell.cc",
+  "file": "/home/sunil/IE-Team7-Project/src/shell.cc",
+  "output": "CMakeFiles/shell.dir/src/shell.cc.o"
+}
+]
